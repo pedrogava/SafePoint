@@ -1,13 +1,18 @@
 package com.github.SafePoint.GlobalSolucion.service;
 
-import com.github.SafePoint.GlobalSolucion.model.SupportSession;
+
+import com.github.SafePoint.GlobalSolucion.dto.UserRequestCreate;
+import com.github.SafePoint.GlobalSolucion.dto.UserRequestUpdate;
 import com.github.SafePoint.GlobalSolucion.model.User;
-import com.github.SafePoint.GlobalSolucion.repository.SupportSessionRepository;
 import com.github.SafePoint.GlobalSolucion.repository.UserRepository;
+
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+
 
 @Service
 public class UserService {
@@ -15,28 +20,42 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private SupportSessionRepository supportSessionRepository;
-
-    public User createUser(User user) {
-        return userRepository.save(user);
-    }
-
-    public User getUserById(Long id) {
+    public Optional<User> update(Long id,
+                                UserRequestUpdate dto) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                    .map(user -> {
+                        user.setName(dto.getName());
+                        user.setEmail(dto.getEmail());
+                        user.setPhone(dto.getPhone());
+                        return userRepository.save(user);
+                    });
     }
 
-    public User updateUser(Long id, User userDetails) {
-        User user = getUserById(id);
-        user.setName(userDetails.getName());
-        user.setEmail(userDetails.getEmail());
-        user.setPhone(userDetails.getPhone());
+    public User save(UserRequestCreate dto) {
+                
+        User user = new User();
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+
         return userRepository.save(user);
     }
 
-    public List<SupportSession> getSupportHistory(Long userId) {
-        User user = getUserById(userId);
-        return supportSessionRepository.findByUser(user);
+    public List<User> findAll() {
+        return userRepository.findAll();
+    } 
+    
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
     }
+
+    public boolean deleteById(Long id){
+        if (userRepository.existsById(id)){
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+
 }

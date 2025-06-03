@@ -1,46 +1,68 @@
 package com.github.SafePoint.GlobalSolucion.controller;
 
-import com.github.SafePoint.GlobalSolucion.model.User;
-import com.github.SafePoint.GlobalSolucion.model.SupportSession;
+import com.github.SafePoint.GlobalSolucion.dto.UserRequestCreate;
+import com.github.SafePoint.GlobalSolucion.dto.UserRequestUpdate;
+import com.github.SafePoint.GlobalSolucion.dto.UserResponse;
 import com.github.SafePoint.GlobalSolucion.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
-
     @Autowired
     private UserService userService;
 
-    // POST /users - Criar usuário
+
+    // Criar usuário
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User savedUser = userService.createUser(user);
-        return ResponseEntity.ok(savedUser);
+    public ResponseEntity<UserResponse> createUser(@RequestBody UserRequestCreate dto) {
+        return ResponseEntity.status(201).body(
+                new UserResponse().toDto(userService.save(dto))
+                );
     }
 
-    // GET /users/{id} - Buscar usuário por ID
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+    // Buscar todos usuários
+    @GetMapping
+    public ResponseEntity<List<UserResponse>> findAll() {
+        return ResponseEntity.ok(userService
+            .findAll()
+            .stream()
+            .map(user -> new UserResponse().toDto(user))
+            .collect(Collectors.toList()));
+    }
+    
+
+    @PutMapping("{id}")
+    public ResponseEntity<UserResponse> update(
+				@PathVariable Long id, 
+				@RequestBody UserRequestUpdate dto) {
+               
+        return userService.update(id, dto)
+                    .map(user -> ResponseEntity.ok(new UserResponse().toDto(user)))                  
+                    .orElse(ResponseEntity.notFound().build());        
     }
 
-    // PUT /users/{id} - Atualizar dados do usuário
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        User updatedUser = userService.updateUser(id, user);
-        return ResponseEntity.ok(updatedUser);
+    @GetMapping("{id}")
+    public ResponseEntity<UserResponse> findById(@PathVariable Long id) {         
+        return userService.findById(id)
+            .map(user -> ResponseEntity.ok(new UserResponse().toDto(user)))
+            .orElse(ResponseEntity.notFound().build());        
     }
 
-    // GET /users/{id}/support-history - Histórico de sessões
-    @GetMapping("/{id}/support-history")
-    public ResponseEntity<List<SupportSession>> getSupportHistory(@PathVariable Long id) {
-        List<SupportSession> history = userService.getSupportHistory(id);
-        return ResponseEntity.ok(history);
+    // (Opcional) Deletar usuário
+    @DeleteMapping("{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        boolean result = userService.deleteById(id);
+
+        if (result) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }        
     }
 }
